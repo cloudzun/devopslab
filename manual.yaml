@@ -179,6 +179,7 @@ git push origin master
 
 下载安装文件
 wget https://github.com/goharbor/harbor/releases/download/v2.4.3/harbor-offline-installer-v2.4.3.tgz
+#加速链接 wget https://chengzhstor.blob.core.windows.net/k8slab/harbor-offline-installer-v2.4.3.tgz
 
 解压
 tar xf harbor-offline-installer-v2.4.3.tgz
