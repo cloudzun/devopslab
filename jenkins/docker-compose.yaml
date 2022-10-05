@@ -11,4 +11,8 @@ services:
       - JENKINS_PASSWORD=password
       - JENKINS_USERNAME=admin
     volumes:
-      - '/data/jenkins_data:/bitnami/jenkins'
+      - 'jenkins_data:/bitnami/jenkins'
+
+volumes:
+  jenkins_data:
+    driver: local
