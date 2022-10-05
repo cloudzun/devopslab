@@ -345,3 +345,16 @@ Pipeline运行结束之后进行验证 http://node:30080
 kubectl patch svc -n kubernetes spring-boot-project  -p '{"spec":{"type": "NodePort"}}'
 kubectl patch service spring-boot-project  --namespace=kubernetes spring-boot-project --type='json' --patch='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30080}]'
 
+
+
+
+
+附录
+
+安装portainer
+docker run -d -p 9000:9000 --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /opt/portainer:/data portainer/portainer -H unix:///var/run/docker.sock
+
+安装Prometheus
+git clone https://github.com/stefanprodan/dockprom  
+cd dockprom 
+ADMIN_USER=admin ADMIN_PASSWORD=admin docker-compose up -d
