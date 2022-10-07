@@ -1,4 +1,4 @@
-# K8S 环境并构建 Spring Boot 项目
+# 创建 Jenkins + GitLab + Harbor + K8S 环境并构建 Spring Boot 项目
 
 #### 环境介绍：
 
