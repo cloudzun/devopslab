@@ -48,7 +48,7 @@ spec:
    }
    environment {
     HARBOR_ADDRESS = "192.168.14.244:5000"
-    NAMESPACE = "kubernetes"
+    NAMESPACE = "uat"
     IMAGE_NAME = "go-project"
     TAG = ""
   }
