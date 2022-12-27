@@ -3,7 +3,7 @@
 环境介绍：
 
 * 虚拟实例1：运行jenkins + gitlab + harbor环境，节点地址192.168.14.244（可以把当前机器的地址进行查找替换）
-* 虚拟实例2：运行单节点k8s群集，版本为1.23.00
+* 虚拟实例2：运行单节点 k8s 群集，版本为1.23.00
 * 上述两个实例的配置均为 4vCPU 8GB内存 127GB 硬盘空间，操作系统为 ubuntu 20.04
 
 
@@ -31,6 +31,7 @@ sudo add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/l
 ```
 
 
+
 修改 docker 配置文件
 
 ```bash
@@ -48,11 +49,13 @@ EOF
 ```
 
 
+
 安装docker docker-compose
 
 ```bash
 apt install docker-compose
 ```
+
 
 
 下载项目文件（可选）
@@ -221,6 +224,8 @@ docker logs -f jenkins_jenkins_1
 
 ## 部署 GitLab
 
+
+
 创建目录或进入目录
 
 ```bash
@@ -311,8 +316,6 @@ a5001f2f81a8   gitlab/gitlab-ce:latest                 "/assets/wrapper"        
 
 
 
-
-
 查看初始化密码
 
 ```bash
@@ -352,7 +355,7 @@ Password: +fZLbARlex/yriLeVG71RSfSxEMKkBxKkdysWB82h+E=
 
 
 
-从 github 上导入一个项目（比如：[https://github.com/cloudzun/cloudzun]进行测试
+从 github 上导入一个项目（比如：https://github.com/cloudzun/cloudzun）进行测试
 
 
 
@@ -430,6 +433,8 @@ To http://192.168.14.244/kubernetes/cloudzun.git
 
 
 ## 部署 Harbor
+
+
 
 下载安装文件
 
@@ -846,6 +851,8 @@ docker run -d -p 2048:80  192.168.14.244:5000/chengzh/docker-2048
 
 ## K8S 群集的初始化配置
 
+
+
 首先按照常规步骤安装 单节点 K8S 群集
 
 
@@ -912,21 +919,24 @@ systemctl enable docker
 
 ## 配置 Jenkins
 
-配置jenkins location
 
-在 http://192.168.14.244:8080/configure 确认 `Jenkins URL`
+
+配置jenkins location (在 http://192.168.14.244:8080/configure )
+
+确认 `Jenkins URL`
 
 ![image-20221227132529493](readme.assets/image-20221227132529493.png)
 
 
 
-配置 `agent`
-在http://192.168.14.244:8080/configureSecurity/ 上启用 `50000` 端口
+配置 `agent` (在http://192.168.14.244:8080/configureSecurity/ )
+启用 `50000` 端口
 
 ![image-20221227132617774](readme.assets/image-20221227132617774.png)
 
 
-配置凭据: 在 http://192.168.14.244:8080/credentials/store/system/domain/_/
+
+配置凭据: (http://192.168.14.244:8080/credentials/store/system/domain/_/)
 
 配置kubernetes证书（ kind: secret file id: study-kubernetes）
 
@@ -962,6 +972,8 @@ systemctl enable docker
 
 
 ## 配置 GitLab
+
+
 
 创建公共组：`kubernetes`
 在此前创建的公共项目组内导入项目：：https://github.com/cloudzun/spring-boot-project
@@ -1176,6 +1188,8 @@ spec:
 
 
 ## 配置 K8S
+
+
 
 给节点打标签
 
@@ -1393,6 +1407,8 @@ kubectl apply -f https://raw.githubusercontent.com/cloudzun/devopslab/main/sprin
 
 ## 创建 Jenkins Piepeline
 
+
+
 在 Jenkins 上创建项目，名称为 `spring-boot-project`，类型为 `pipeline`
 
 ![image-20221227141905953](readme.assets/image-20221227141905953.png)
@@ -1408,6 +1424,8 @@ kubectl apply -f https://raw.githubusercontent.com/cloudzun/devopslab/main/sprin
 
 
 ## 手动触发构建项目
+
+
 
 点击 `Build Now` 手动触发构建过程
 
@@ -1829,6 +1847,8 @@ Finished: SUCCESS
 
 ## 验证项目构建效果
 
+
+
 使用Blue Ocean查看pipeline运行过程
 
 ![image-20221227143202442](readme.assets/image-20221227143202442.png)
@@ -1895,7 +1915,11 @@ spring-boot-project   1/1     1            1           82d   spring-boot-project
 
 # 创建自动触发流水线
 
-## 准备K8S环境
+
+
+## 准备 K8S 资源
+
+
 
 ```bash
 kubectl  apply -f https://raw.githubusercontent.com/cloudzun/devopslab/main/go-project.yaml 
@@ -1905,7 +1929,9 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
  
 
-## 设置Gitlab
+## 设置 Gitlab
+
+
 
 从Admin Settings  Network  页面 (http://192.168.14.244/admin/application_settings/network）
 
@@ -1922,6 +1948,8 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
  
 
 ## 创建 pipeline 项目并配置自动触发
+
+
 
 填充代码库路径：http://192.168.14.244/kubernetes/go-project
 
@@ -1967,7 +1995,9 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
  
 
-## 使用code commit 触发流水线，
+## 使用 code commit 触发流水线
+
+
 
 修改项目库里的代码并提交
 
@@ -1995,7 +2025,11 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
 # 创建UAT和生产环境流水线
 
-## 准备 K8S 环境
+
+
+## 准备 K8S 资源
+
+
 
 ```bash
 kubectl  create ns uat    
@@ -2007,6 +2041,8 @@ kubectl  patch service go-project --namespace=uat --type='json'  --patch='[{"op"
  
 
 ## 创建 pipeline 项目
+
+
 
 启用 `This project is parameterized`，并填充以下属性，
 
@@ -2086,6 +2122,8 @@ spec:
 
 ## 在UAT环境中部署1.0版本的服务
 
+
+
 使用`Build with Parameters`，并在 IMAGE_TAG 里选择最新版本进行部署
 
 ![img](readme.assets/clip_image120.jpg)
@@ -2104,6 +2142,8 @@ spec:
 
 ## 将开发环境中的代码迭代到2.0
 
+
+
 ![img](readme.assets/clip_image126.jpg)
 
  
@@ -2121,6 +2161,8 @@ spec:
  
 
 ## 迭代UAT环境到2.0
+
+
 
 ![图形用户界面, 文本, 应用程序  描述已自动生成](readme.assets/clip_image134.jpg)
 
