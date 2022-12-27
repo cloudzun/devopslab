@@ -1,31 +1,39 @@
 # 创建 Jenkins + GitLab + Harbor + K8S 环境并构建 Spring Boot 项目
 
-#### 环境介绍：
+环境介绍：
 
 * 虚拟实例1：运行jenkins + gitlab + harbor环境，节点地址192.168.14.244（可以把当前机器的地址进行查找替换）
 * 虚拟实例2：运行单节点k8s群集，版本为1.23.00
-* 上述两个实例的配置均为4vCPU 8GB内存 127GB 硬盘空间，操纵系统为ubuntu 20.04
+* 上述两个实例的配置均为 4vCPU 8GB内存 127GB 硬盘空间，操作系统为 ubuntu 20.04
 
-#### 第一部分，环境初始化安装
 
-**安装docker**
 
-```
+# Lab 1: 环境初始化安装
+
+
+
+## Docker 的安装和初始化配置
+
+
+
+安装 docker
+
+```bash
 apt -y install apt-transport-https ca-certificates curl software-properties-common
 ```
 
-```
+```bash
 curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
 ```
 
-```
+```bash
 sudo add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
 ```
 
-\
-修改docker配置文件
 
-```
+修改 docker 配置文件
+
+```bash
 cat > /etc/docker/daemon.json << EOF
 {
     "exec-opts": ["native.cgroupdriver=systemd"],
@@ -39,31 +47,48 @@ cat > /etc/docker/daemon.json << EOF
 EOF
 ```
 
-\
+
 安装docker docker-compose
 
-```
+```bash
 apt install docker-compose
 ```
 
-\
+
 下载项目文件（可选）
 
-```
+```bash
 git clone https://github.com/cloudzun/devopslab
 ```
 
-**安装Jenkins**
 
-创建文件夹
 
-进入文件夹
 
-创建docker-compose文件
 
-使用以下范例填充docker-compose文件
+## **部署 Jenkins **
 
+
+
+创建文件夹或者进入 jenkins 文件夹
+
+```bash
+root@dockerlab:~/devopslab/jenkins# pwd
+/root/devopslab/jenkins
 ```
+
+
+
+创建 docker-compose 文件
+
+```bash
+nano docker-compose.yaml
+```
+
+
+
+使用以下范例填充 docker-compose 文件
+
+```yaml
 version: '2'
  
 services:
@@ -84,27 +109,74 @@ volumes:
  driver: local
 ```
 
-备注： 如果已经已经下载了项目文件可以直接 cd devopslab/jenkins/
+备注： 如果已经已经下载了项目文件可以直接使用
 
-安装Jenkins
 
-<figure><img src="https://pic2.zhimg.com/v2-dd56fc62c310d7309de30d86dfc0d185_b.jpg" alt=""><figcaption></figcaption></figure>
+
+安装 Jenkins
+
+```bash
+docker-compose up -d
+```
+
+
+
+```bash
+root@dockerlab:~/devopslab/jenkins# docker-compose up -d
+Creating network "jenkins_default" with the default driver
+Creating volume "jenkins_jenkins_data" with local driver
+Pulling jenkins (docker.io/bitnami/jenkins:2.319.1-debian-10-r11)...
+2.319.1-debian-10-r11: Pulling from bitnami/jenkins
+0796bf144e3f: Pull complete
+0796bf144e3f: Pull complete
+e85548e986ad: Pull complete
+5914dad9d0cc: Pull complete
+9005e670c8c9: Pull complete
+1265095ed0c0: Pull complete
+658038a23762: Pull complete
+903979d96da5: Pull complete
+49a3b0edd7f5: Pull complete
+0c32ce46b69c: Pull complete
+9f645f0ad478: Pull complete
+a9c894506ad3: Pull complete
+Digest: sha256:4413df5d6e3b71f2994cae0e541323c3b6b7d1ce1babe3eba6999c3f33e2154a
+Status: Downloaded newer image for bitnami/jenkins:2.319.1-debian-10-r11
+Creating jenkins_jenkins_1 ... done
+```
+
+
 
 查看安装进度
 
-```
+```bash
 docker logs -f jenkins_jenkins_1
 ```
 
-<figure><img src="https://pic1.zhimg.com/v2-b05d5b3dfd1ca930cfb1346b0657d81c_b.jpg" alt=""><figcaption></figcaption></figure>
+
+
+```bash
+...
+2022-12-27 01:54:50.726+0000 [id=26]    INFO    jenkins.InitReactorRunner$1#onAttained: Prepared all plugins
+2022-12-27 01:54:50.818+0000 [id=27]    INFO    jenkins.InitReactorRunner$1#onAttained: Started all plugins
+2022-12-27 01:54:52.523+0000 [id=26]    INFO    jenkins.InitReactorRunner$1#onAttained: Augmented all extensions
+2022-12-27 01:54:53.553+0000 [id=27]    INFO    jenkins.InitReactorRunner$1#onAttained: System config loaded
+2022-12-27 01:54:53.553+0000 [id=27]    INFO    jenkins.InitReactorRunner$1#onAttained: System config adapted
+2022-12-27 01:54:53.554+0000 [id=27]    INFO    jenkins.InitReactorRunner$1#onAttained: Loaded all jobs
+2022-12-27 01:54:53.581+0000 [id=27]    INFO    jenkins.InitReactorRunner$1#onAttained: Configuration for all jobs updated
+2022-12-27 01:54:53.695+0000 [id=40]    INFO    hudson.model.AsyncPeriodicWork#lambda$doRun$1: Started Download metadata
+2022-12-27 01:54:53.863+0000 [id=27]    INFO    jenkins.InitReactorRunner$1#onAttained: Completed initialization
+2022-12-27 01:54:53.921+0000 [id=20]    INFO    hudson.WebAppMain$3#run: Jenkins is fully up and running
+```
 
 等待看到Jenkins is fully up and running字样说明安装成功
 
-<figure><img src="https://pic4.zhimg.com/v2-3f2eff71a951933d3cd0c4376405ef57_b.jpg" alt=""><figcaption></figcaption></figure>
 
-使用admin/password 登录到[http://192.168.14.244:8080](https://link.zhihu.com/?target=http%3A//192.168.14.244%3A8080),建议修改密码
 
-<figure><img src="https://pic2.zhimg.com/v2-a25dba70630fb7b35f82aa349e949479_b.jpg" alt=""><figcaption></figcaption></figure>
+使用 admin/password 登录到[http://192.168.14.244:8080](https://link.zhihu.com/?target=http%3A//192.168.14.244%3A8080),建议修改密码
+
+![image-20221227095731568](readme.assets/image-20221227095731568.png)
+
+
 
 加载jenkins插件:[http://192.168.14.244:8080/pluginManager/available](https://link.zhihu.com/?target=http%3A//192.168.14.244%3A8080/pluginManager/available)
 
@@ -131,22 +203,44 @@ docker logs -f jenkins_jenkins_1
 * Image Tag Parameter
 * Active Choices
 
-<figure><img src="https://pic4.zhimg.com/v2-dab9ad31e27c1a207c8b3998ed330fe7_b.jpg" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="https://pic1.zhimg.com/v2-98d786dcc2d885e494fab48a8bfecf1c_b.jpg" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="https://pic2.zhimg.com/v2-b1e47cf1545b0ff78ff67ea2fca3303d_b.jpg" alt=""><figcaption></figcaption></figure>
+![image-20221227095821990](readme.assets/image-20221227095821990.png)
 
-**安装GitLab**\
-创建目录
 
-进入目录
 
-创建docker-compose文件
 
-使用以下代码填充docker-compose文件
 
+![image-20221227095835090](readme.assets/image-20221227095835090.png)
+
+
+
+![image-20221227095856226](readme.assets/image-20221227095856226.png)
+
+
+
+## **部署 GitLab**
+
+创建目录或进入目录
+
+```bash
+root@dockerlab:~/devopslab/gitlab# pwd
+/root/devopslab/gitlab
 ```
+
+
+
+创建 docker-compose 文件
+
+```bash
+nano docker-compose.yaml
+```
+
+
+
+使用以下代码填充 docker-compose 文件
+
+```bash
 version: '3.6'
 services:
   Gitlab:
@@ -170,148 +264,478 @@ services:
       - '/gitlab-data/data:/var/opt/gitlab'
 ```
 
+
+
 安装gitlab
 
-<figure><img src="https://pic2.zhimg.com/v2-f0507a0e90a6de3e1a04dc8ff453155d_b.jpg" alt=""><figcaption></figcaption></figure>
+```bash
+docker-compose up -d 
+```
 
-\
-查看安装进度，确认gitlab容器的状态为：healthy\
 
 
-<figure><img src="https://pic2.zhimg.com/v2-ccb8b696d5c5f528a52a6525d202be45_b.png" alt=""><figcaption></figcaption></figure>
+```bash
+root@dockerlab:~/devopslab/gitlab# docker-compose up -d
+Creating network "gitlab_default" with the default driver
+Pulling Gitlab (gitlab/gitlab-ce:latest)...
+latest: Pulling from gitlab/gitlab-ce
+7b1a6ab2e44d: Pull complete
+6c37b8f20a77: Pull complete
+f50912690f18: Pull complete
+bb6bfd78fa06: Pull complete
+2c03ae575fcd: Pull complete
+839c111a7d43: Pull complete
+4989fee924bc: Pull complete
+666a7fb30a46: Pull complete
+Digest: sha256:5a0b03f09ab2f2634ecc6bfeb41521d19329cf4c9bbf330227117c048e7b5163
+Status: Downloaded newer image for gitlab/gitlab-ce:latest
+Creating gitlab_Gitlab_1 ... done
+```
+
+
+
+查看安装进度，确认gitlab容器的状态为：healthy
+
+```bash
+docker ps
+```
+
+
+
+```bash
+root@dockerlab:~/devopslab/gitlab# docker ps
+CONTAINER ID   IMAGE                                   COMMAND                  CREATED          STATUS                   PORTS                                                                                                                   NAMES
+a5001f2f81a8   gitlab/gitlab-ce:latest                 "/assets/wrapper"        3 minutes ago    Up 3 minutes (healthy)   0.0.0.0:80->80/tcp, :::80->80/tcp, 0.0.0.0:10022->22/tcp, :::10022->22/tcp, 0.0.0.0:10443->443/tcp, :::10443->443/tcp   gitlab_Gitlab_1
+90e7c9045552   bitnami/jenkins:2.319.1-debian-10-r11   "/opt/bitnami/script…"   26 minutes ago   Up 7 minutes             0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 0.0.0.0:50000->50000/tcp, :::50000->50000/tcp, 8443/tcp                      jenkins_jenkins_1
+```
+
+
+
+
 
 查看初始化密码
 
-```
+```bash
 nano /gitlab-data/config/initial_root_password
 ```
 
-<figure><img src="https://pic2.zhimg.com/v2-d89dbc630820d3957435d61c398d52a5_b.png" alt=""><figcaption></figcaption></figure>
-
-\
-使用root和初始化密码登录到服务器，并修改密码\
 
 
-<figure><img src="https://pic2.zhimg.com/v2-1d5b51241c5b9ca9147d86186fe1bd99_b.jpg" alt=""><figcaption></figcaption></figure>
+```bash
+# WARNING: This value is valid only in the following conditions
+#          1. If provided manually (either via `GITLAB_ROOT_PASSWORD` environment variable or via `gitlab_rails['initial_root_password']`>
+#          2. Password hasn't been changed manually, either via UI or via command line.
+#
+#          If the password shown here doesn't work, you must reset the admin password following https://docs.gitlab.com/ee/security/reset>
 
-\
-创建一个公开的组，比如kubernetes\
+Password: +fZLbARlex/yriLeVG71RSfSxEMKkBxKkdysWB82h+E=
 
-
-<figure><img src="https://pic4.zhimg.com/v2-bcbfcd2aff2898965c1eec79d927c257_b.jpg" alt=""><figcaption></figcaption></figure>
-
-<figure><img src="https://pic4.zhimg.com/v2-6299798b9aa2dd09efffe2c5404bf207_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-从githuba上导入一个项目（比如：[https://github.com/cloudzun/cloudzun](https://link.zhihu.com/?target=https%3A//github.com/cloudzun/cloudzun)）进行测试\
-
-
-<figure><img src="https://pic2.zhimg.com/v2-5184d83c8aa07d65ff61136296d03759_b.jpg" alt=""><figcaption></figcaption></figure>
-
-<figure><img src="https://pic2.zhimg.com/v2-29c0b8fc1350a8a317659f2548fa5501_b.jpg" alt=""><figcaption></figcaption></figure>
-
-<figure><img src="https://pic2.zhimg.com/v2-62314d6e280e5454db5ac6e341ba8f59_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-测试gitlab项目
-
+# NOTE: This file will be automatically deleted in the first reconfigure run after 24 hours.
 ```
+
+
+
+使用root和初始化密码登录到服务器，并修改密码
+
+![image-20221227102713071](readme.assets/image-20221227102713071.png)
+
+
+
+
+创建一个公开的组，比如 `kubernetes`
+
+![image-20221227102725644](readme.assets/image-20221227102725644.png)
+
+
+
+![image-20221227102739173](readme.assets/image-20221227102739173.png)
+
+
+
+从 github 上导入一个项目（比如：[https://github.com/cloudzun/cloudzun]进行测试
+
+
+
+![image-20221227102750638](readme.assets/image-20221227102750638.png)
+
+
+
+
+
+![image-20221227102800120](readme.assets/image-20221227102800120.png)
+
+
+
+![image-20221227102809829](readme.assets/image-20221227102809829.png)
+
+
+
+测试 gitlab 项目
+
+```bash
 git clone http://192.168.14.244/kubernetes/cloudzun.git
 ```
 
-```
-git config --global user.email info@cloudzun.com
-```
 
-```
+
+```bash
+git config --global user.email info@cloudzun.com
 git config --global user.name "Abraham Cheng"
 ```
 
-\
+
 针对文件做些修改，或者增加一些文件
 
-```
+```bash
 git commit -am "first commit"
+git push
 ```
 
-**安装 Harbor**\
+
+
+```bash
+root@dockerlab:~/devopslab/gitlab# cd
+root@dockerlab:~# git clone http://192.168.14.244/kubernetes/cloudzun.git
+Cloning into 'cloudzun'...
+remote: Enumerating objects: 200, done.
+remote: Total 200 (delta 0), reused 0 (delta 0), pack-reused 200
+Receiving objects: 100% (200/200), 39.87 KiB | 7.97 MiB/s, done.
+Resolving deltas: 100% (61/61), done.
+root@dockerlab:~# git config --global user.email info@cloudzun.com
+root@dockerlab:~# git config --global user.name "Abraham Cheng"
+root@dockerlab:~# dir
+cloudzun  devopslab  readme
+root@dockerlab:~# cd cloudzun
+root@dockerlab:~/cloudzun# nano index.html
+root@dockerlab:~/cloudzun# git commit -am "first commit"
+[master 1e16894] first commit
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+root@dockerlab:~/cloudzun# git push
+Username for 'http://192.168.14.244': root
+Password for 'http://root@192.168.14.244':
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 318 bytes | 318.00 KiB/s, done.
+Total 3 (delta 1), reused 0 (delta 0)
+To http://192.168.14.244/kubernetes/cloudzun.git
+   dbae153..1e16894  master -> master
+```
+
+
+
+![image-20221227104426024](readme.assets/image-20221227104426024.png)
+
+
+
+## **部署 Harbor**
+
 下载安装文件
 
-```
+```bash
 wget https://github.com/goharbor/harbor/releases/download/v2.4.3/harbor-offline-installer-v2.4.3.tgz
 ```
 
+
+
 解压
 
-```
+```bash
 tar xf harbor-offline-installer-v2.4.3.tgz
 ```
 
+
+
 进入目录
 
-加载映像文件和配置文件
-
+```bash
+cd harbor
 ```
+
+
+
+```bash
+root@dockerlab:~# cd harbor
+root@dockerlab:~/harbor#
+```
+
+
+
+加载映像文件
+
+```bash
 docker load -i harbor.v2.4.3.tar.gz
 ```
 
+
+
+查看映像文件
+
+```bash
+docker images | grep goharbor
 ```
+
+
+
+```bash
+root@dockerlab:~/harbor# docker images | grep goharbor
+goharbor/harbor-exporter        v2.4.3                  776ac6ee91f4   4 months ago    81.5MB
+goharbor/chartmuseum-photon     v2.4.3                  f39a9694988d   4 months ago    172MB
+goharbor/redis-photon           v2.4.3                  b168e9750dc8   4 months ago    154MB
+goharbor/trivy-adapter-photon   v2.4.3                  a406a715461c   4 months ago    251MB
+goharbor/notary-server-photon   v2.4.3                  da89404c7cf9   4 months ago    109MB
+goharbor/notary-signer-photon   v2.4.3                  38468ac13836   4 months ago    107MB
+goharbor/harbor-registryctl     v2.4.3                  61243a84642b   4 months ago    135MB
+goharbor/registry-photon        v2.4.3                  9855479dd6fa   4 months ago    77.9MB
+goharbor/nginx-photon           v2.4.3                  0165c71ef734   4 months ago    44.4MB
+goharbor/harbor-log             v2.4.3                  57ceb170dac4   4 months ago    161MB
+goharbor/harbor-jobservice      v2.4.3                  7fea87c4b884   4 months ago    219MB
+goharbor/harbor-core            v2.4.3                  d864774a3b8f   4 months ago    197MB
+goharbor/harbor-portal          v2.4.3                  85f00db66862   4 months ago    53.4MB
+goharbor/harbor-db              v2.4.3                  7693d44a2ad6   4 months ago    225MB
+goharbor/prepare                v2.4.3                  c882d74725ee   4 months ago    268MB
+```
+
+
+
+
+
+创建配置文件
+
+```bash
 cp harbor.yml.tmpl harbor.yml
 ```
 
-\
+
+
+```bash
+root@dockerlab:~/harbor# cp harbor.yml.tmpl harbor.yml
+root@dockerlab:~/harbor# dir
+common.sh  harbor.v2.4.3.tar.gz  harbor.yml  harbor.yml.tmpl  install.sh  LICENSE  prepare
+```
+
+
+
 修改配置文件
 
-<figure><img src="https://pic2.zhimg.com/v2-9d8e35d0f06ad4c82ce6a2150aaf0a85_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-hostname:使用IP地址\
-port:使用5000端口\
-https:这一段全部注释\
+```bash
+nano harbor.yml
+```
 
 
-<figure><img src="https://pic4.zhimg.com/v2-3bbb390a98c8849a726a0b698bf59177_b.jpg" alt=""><figcaption></figcaption></figure>
 
-\
-harbor\_admin\_password:默认为admin:Harbor12345\
-data\_volume:改为/data/harbor
+```bash
+# Configuration file of Harbor
 
-\
+# The IP address or hostname to access admin UI and registry service.
+# DO NOT use localhost or 127.0.0.1, because Harbor needs to be accessed by external clients.
+hostname: 192.168.14.244 #主机名替换为 IP 地址
+
+# http related config
+http:
+  # port for http, default is 80. If https enabled, this port will redirect to https port
+  port: 5000 # 端口替换为 5000
+
+# https related config # HTTPS 这一段都注释掉
+# https:
+  # https port for harbor, default is 443
+  # port: 443
+  # The path of cert and key files for nginx
+  # certificate: /your/certificate/path
+  # private_key: /your/private/key/path
+...
+```
+
+
+
+```bash
+...
+# The initial password of Harbor admin
+# It only works in first time to install harbor
+# Remember Change the admin password from UI after launching Harbor.
+harbor_admin_password: Harbor12345 #初始密码,可更换
+
+# Harbor DB configuration
+database:
+  # The password for the root user of Harbor DB. Change this before any production use.
+  password: root123
+  # The maximum number of connections in the idle connection pool. If it <=0, no idle connections are retained.
+  max_idle_conns: 100
+  # The maximum number of open connections to the database. If it <= 0, then there is no limit on the number of open connections.
+  # Note: the default number of connections is 1024 for postgres of harbor.
+  max_open_conns: 900
+
+# The default data volume
+data_volume: /data/harbor #修改地址
+...
+```
+
+
+
+
 预配存储
 
-```
+```bash
 mkdir /data/harbor /var/log/harbor -p
+ ./prepare
 ```
 
-\
-安装
 
-<figure><img src="https://pic2.zhimg.com/v2-9ebb5da918f7f46cd646fb3208a0b4a1_b.jpg" alt=""><figcaption></figcaption></figure>
 
-\
+```bash
+root@dockerlab:~/harbor# mkdir /data/harbor /var/log/harbor -p
+root@dockerlab:~/harbor#  ./prepare
+prepare base dir is set to /root/harbor
+WARNING:root:WARNING: HTTP protocol is insecure. Harbor will deprecate http protocol in the future. Please make sure to upgrade to https
+Generated configuration file: /config/portal/nginx.conf
+Generated configuration file: /config/log/logrotate.conf
+Generated configuration file: /config/log/rsyslog_docker.conf
+Generated configuration file: /config/nginx/nginx.conf
+Generated configuration file: /config/core/env
+Generated configuration file: /config/core/app.conf
+Generated configuration file: /config/registry/config.yml
+Generated configuration file: /config/registryctl/env
+Generated configuration file: /config/registryctl/config.yml
+Generated configuration file: /config/db/env
+Generated configuration file: /config/jobservice/env
+Generated configuration file: /config/jobservice/config.yml
+Generated and saved secret to file: /data/secret/keys/secretkey
+Successfully called func: create_root_cert
+Generated configuration file: /compose_location/docker-compose.yml
+Clean up the input dir
+```
+
+
+
+安装 harbor
+
+```bash
+ ./install.sh
+```
+
+
+
+```bash
+root@dockerlab:~/harbor# ./install.sh
+
+[Step 0]: checking if docker is installed ...
+
+Note: docker version: 20.10.22
+
+[Step 1]: checking docker-compose is installed ...
+
+Note: docker-compose version: 1.25.0
+
+[Step 2]: loading Harbor images ...
+Loaded image: goharbor/trivy-adapter-photon:v2.4.3
+Loaded image: goharbor/redis-photon:v2.4.3
+Loaded image: goharbor/nginx-photon:v2.4.3
+Loaded image: goharbor/notary-signer-photon:v2.4.3
+Loaded image: goharbor/prepare:v2.4.3
+Loaded image: goharbor/harbor-registryctl:v2.4.3
+Loaded image: goharbor/harbor-log:v2.4.3
+Loaded image: goharbor/harbor-jobservice:v2.4.3
+Loaded image: goharbor/harbor-exporter:v2.4.3
+Loaded image: goharbor/registry-photon:v2.4.3
+Loaded image: goharbor/notary-server-photon:v2.4.3
+Loaded image: goharbor/harbor-portal:v2.4.3
+Loaded image: goharbor/harbor-core:v2.4.3
+Loaded image: goharbor/harbor-db:v2.4.3
+Loaded image: goharbor/chartmuseum-photon:v2.4.3
+
+
+[Step 3]: preparing environment ...
+
+[Step 4]: preparing harbor configs ...
+prepare base dir is set to /root/harbor
+WARNING:root:WARNING: HTTP protocol is insecure. Harbor will deprecate http protocol in the future. Please make sure to upgrade to https
+Clearing the configuration file: /config/jobservice/env
+Clearing the configuration file: /config/jobservice/config.yml
+Clearing the configuration file: /config/db/env
+Clearing the configuration file: /config/registryctl/env
+Clearing the configuration file: /config/registryctl/config.yml
+Clearing the configuration file: /config/core/env
+Clearing the configuration file: /config/core/app.conf
+Clearing the configuration file: /config/portal/nginx.conf
+Clearing the configuration file: /config/log/rsyslog_docker.conf
+Clearing the configuration file: /config/log/logrotate.conf
+Clearing the configuration file: /config/nginx/nginx.conf
+Clearing the configuration file: /config/registry/passwd
+Clearing the configuration file: /config/registry/config.yml
+Generated configuration file: /config/portal/nginx.conf
+Generated configuration file: /config/log/logrotate.conf
+Generated configuration file: /config/log/rsyslog_docker.conf
+Generated configuration file: /config/nginx/nginx.conf
+Generated configuration file: /config/core/env
+Generated configuration file: /config/core/app.conf
+Generated configuration file: /config/registry/config.yml
+Generated configuration file: /config/registryctl/env
+Generated configuration file: /config/registryctl/config.yml
+Generated configuration file: /config/db/env
+Generated configuration file: /config/jobservice/env
+Generated configuration file: /config/jobservice/config.yml
+loaded secret from file: /data/secret/keys/secretkey
+Generated configuration file: /compose_location/docker-compose.yml
+Clean up the input dir
+
+
+
+[Step 5]: starting Harbor ...
+Creating network "harbor_harbor" with the default driver
+Creating harbor-log ... done
+Creating harbor-db     ... done
+Creating redis         ... done
+Creating registry      ... done
+Creating harbor-portal ... done
+Creating registryctl   ... done
+Creating harbor-core   ... done
+Creating harbor-jobservice ... done
+Creating nginx             ... done
+✔ ----Harbor has been installed and started successfully.----
+```
+
+
 验证安装过程
 
-<figure><img src="https://pic1.zhimg.com/v2-d0942ddf178ced3d2e698512fdb0a264_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-登录yml文件定义的密码登录到节点\
-
-
-<figure><img src="https://pic2.zhimg.com/v2-1d7ee2a36822854d20b84ba8d7c7ce95_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-创建一个公共项目chengzh\
-
-
-<figure><img src="https://pic2.zhimg.com/v2-920003d5faa713799516d023ebb15f25_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-在另一台机器上测试
-
-\
-修改daemon.json
-
+```bash
+docker ps
 ```
+
+
+
+```bash
+root@dockerlab:~/harbor# docker ps
+CONTAINER ID   IMAGE                                   COMMAND                  CREATED             STATUS                    PORTS                                                                                                                   NAMES
+cc909048817d   goharbor/harbor-jobservice:v2.4.3       "/harbor/entrypoint.…"   2 minutes ago       Up 2 minutes (healthy)                                                                                                                            harbor-jobservice
+fd87f71974d0   goharbor/nginx-photon:v2.4.3            "nginx -g 'daemon of…"   2 minutes ago       Up 2 minutes (healthy)    0.0.0.0:5000->8080/tcp, :::5000->8080/tcp                                                                               nginx
+85f0a4ace04e   goharbor/harbor-core:v2.4.3             "/harbor/entrypoint.…"   2 minutes ago       Up 2 minutes (healthy)                                                                                                                            harbor-core
+3815ba1ef3c6   goharbor/harbor-registryctl:v2.4.3      "/home/harbor/start.…"   2 minutes ago       Up 2 minutes (healthy)                                                                                                                            registryctl
+6cfc0338dba3   goharbor/harbor-portal:v2.4.3           "nginx -g 'daemon of…"   2 minutes ago       Up 2 minutes (healthy)                                                                                                                            harbor-portal
+14a9dac44b21   goharbor/registry-photon:v2.4.3         "/home/harbor/entryp…"   2 minutes ago       Up 2 minutes (healthy)                                                                                                                            registry
+aab0a9c065b6   goharbor/redis-photon:v2.4.3            "redis-server /etc/r…"   2 minutes ago       Up 2 minutes (healthy)                                                                                                                            redis
+bb0b750bcdc6   goharbor/harbor-db:v2.4.3               "/docker-entrypoint.…"   2 minutes ago       Up 2 minutes (healthy)                                                                                                                            harbor-db
+44629375c6c8   goharbor/harbor-log:v2.4.3              "/bin/sh -c /usr/loc…"   2 minutes ago       Up 2 minutes (healthy)    127.0.0.1:1514->10514/tcp                                                                                               harbor-log
+a5001f2f81a8   gitlab/gitlab-ce:latest                 "/assets/wrapper"        49 minutes ago      Up 49 minutes (healthy)   0.0.0.0:80->80/tcp, :::80->80/tcp, 0.0.0.0:10022->22/tcp, :::10022->22/tcp, 0.0.0.0:10443->443/tcp, :::10443->443/tcp   gitlab_Gitlab_1
+90e7c9045552   bitnami/jenkins:2.319.1-debian-10-r11   "/opt/bitnami/script…"   About an hour ago   Up 53 minutes             0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 0.0.0.0:50000->50000/tcp, :::50000->50000/tcp, 8443/tcp                      jenkins_jenkins_1
+```
+
+
+
+
+登录到 harbor portal
+
+![image-20221227111137127](readme.assets/image-20221227111137127.png)
+
+
+创建一个公共项目 `chengzh`
+
+![image-20221227111159786](readme.assets/image-20221227111159786.png)
+
+
+测试映像上传, 首先需要修改daemon.json
+
+```bash
 cat > /etc/docker/daemon.json << EOF
 {
  "exec-opts": ["native.cgroupdriver=systemd"],
@@ -326,61 +750,135 @@ cat > /etc/docker/daemon.json << EOF
 EOF
 ```
 
-\
+
+
 重启docker
 
-\
+```bash
+systemctl restart docker
+systemctl enable docker
+```
+
+
+
+```bash
+root@dockerlab:~/harbor# systemctl restart docker
+root@dockerlab:~/harbor# systemctl enable docker
+Synchronizing state of docker.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable docker
+```
+
+建议使用另外一台机器测试,如果是在 devops 本机测试,记得这一步之后需要手动拉起 harbor stack
+
+
+
 登录到harbor
 
-```
+```bash
 docker login 192.168.14.244:5000
 ```
 
-\
+
+
+```bash
+root@dockerlab:~/harbor# docker login 192.168.14.244:5000
+Username: admin
+Password:
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+root@dockerlab:~/harbor#
+```
+
+
+
 上传映像
 
-```
+```bash
 docker pull alexwhen/docker-2048
 ```
 
-```
+
+
+```bash
 docker tag alexwhen/docker-2048 192.168.14.244:5000/chengzh/docker-2048
 ```
 
-```
+
+
+```bash
 docker push 192.168.14.244:5000/chengzh/docker-2048
 ```
 
-\
-可以在另一台机器上测试
 
+
+```bash
+root@dockerlab:~/harbor# docker tag alexwhen/docker-2048 192.168.14.244:5000/chengzh/docker-2048
+root@dockerlab:~/harbor# docker push 192.168.14.244:5000/chengzh/docker-2048
+Using default tag: latest
+The push refers to repository [192.168.14.244:5000/chengzh/docker-2048]
+5f70bf18a086: Pushed
+7c624c88ed95: Pushed
+41b3adcd63c6: Pushed
+745737c319fa: Pushed
+latest: digest: sha256:ecfb0206e8b62c29bd737bf553420f2f460107595f2c5b4671af0a5bfd8367df size: 1567
 ```
+
+
+
+查看上传的映像
+
+![image-20221227112258590](readme.assets/image-20221227112258590.png)
+
+
+
+可选,在另一台机器上测试这个映像
+
+```bash
 docker run -d -p 2048:80  192.168.14.244:5000/chengzh/docker-2048
 ```
 
-**创建测试K8S群集（单节点群集）**
+
+
+
+
+## **创建测试 K8S 群集（单节点群集）**
 
 按照常规步骤安装K8S之后，执行以下操作：
 
+
+
 删除master污点，使其能承载工作负载
 
-```
+```bash
 kubectl taint node node node-role.kubernetes.io/master-
 ```
 
 注意：node为充当master这台机器的计算机名
 
+
+
 打印admin.conf文件内容，并复制保存到本地
+
+```bash
+cat $HOME/.kube/config
+```
+
+
 
 创建ingress
 
-```
+```bash
 kubectl apply -f https://raw.githubusercontent.com/cloudzun/devopslab/main/ingress.yaml
 ```
 
-修改daemon.json
 
-```
+
+修改 daemon.json
+
+```bash
 cat > /etc/docker/daemon.json << EOF
 {
  "exec-opts": ["native.cgroupdriver=systemd"],
@@ -395,9 +893,20 @@ cat > /etc/docker/daemon.json << EOF
 EOF
 ```
 
-重启docker
 
-#### 第二部分，环境整合配置
+
+重启 docker
+
+```bash
+systemctl restart docker
+systemctl enable docker
+```
+
+
+
+
+
+# 第二部分，环境整合配置
 
 **配置Jenkins**\
 配置jenkins location\
@@ -487,7 +996,9 @@ kubectl create secret docker-registry harborkey --docker-server=192.168.14.244:5
 
 <figure><img src="https://pic4.zhimg.com/v2-a3d2da7c804b8a46b1dc79ec737b26e7_b.png" alt=""><figcaption></figcaption></figure>
 
-#### 第三部分：构建 spring-boot-project 项目
+
+
+# 第三部分：构建 spring-boot-project 项目
 
 在K8S群集上创建项目所需资源
 
