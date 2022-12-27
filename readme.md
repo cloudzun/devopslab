@@ -240,7 +240,7 @@ nano docker-compose.yaml
 
 使用以下代码填充 docker-compose 文件
 
-```bash
+```yaml
 version: '3.6'
 services:
   Gitlab:
@@ -951,7 +951,7 @@ systemctl enable docker
 
 
 
-## 配置Harbor
+## 配置 Harbor
 
 
 
@@ -961,7 +961,7 @@ systemctl enable docker
 
 
 
-## 配置GitLab
+## 配置 GitLab
 
 创建公共组：`kubernetes`
 在此前创建的公共项目组内导入项目：：https://github.com/cloudzun/spring-boot-project
@@ -972,7 +972,7 @@ systemctl enable docker
 
 注意：新导入的公共项目组的地址：[http://192.168.14.244/kubernetes/spring-boot-project.git]
 
-对项目中的Jenkins文件做必要调整:
+对项目中的 Jenkins 文件做必要调整:
 
 ```yaml
 pipeline {
@@ -1168,8 +1168,8 @@ spec:
 
 
 
-- 104行 123行的项目url: 地址更新为当前项目地址
-- 180行的 `HARBOR\_ADDRESS` 替换位当前harbor地址（如果未使用80端口，则需要替换端口）
+- 104行 123行的项目`url:` 地址更新为当前项目地址
+- 180行的 `HARBOR\_ADDRESS` 替换位当前 harbor 地址（如果未使用80端口，则需要替换端口）
 
 
 
@@ -1201,88 +1201,689 @@ kubectl create secret docker-registry harborkey --docker-server=192.168.14.244:5
 
 
 
+查看secret
 
-
-# 构建 spring-boot-project 项目
-
-在K8S群集上创建项目所需资源
-
+```bash
+kubectl get secret -n kubernetes
+kubectl describe secret harborkey  -n kubernetes
 ```
+
+
+
+```bash
+root@node:~# kubectl get secret -n kubernetes
+NAME                  TYPE                                  DATA   AGE
+default-token-rzjkb   kubernetes.io/service-account-token   3      82d
+harborkey             kubernetes.io/dockerconfigjson        1      82d
+root@node:~# kubectl describe secret harborkey  -n kubernetes
+Name:         harborkey
+Namespace:    kubernetes
+Labels:       <none>
+Annotations:  <none>
+
+Type:  kubernetes.io/dockerconfigjson
+
+Data
+====
+.dockerconfigjson:  134 bytes
+```
+
+
+
+
+
+# 构建 spring-boot-project 脚手架项目
+
+
+
+## 准备 K8S 资源
+
+
+
+创建定义资源所需的配置文件
+
+```bash
+nano spring-boot-project.yaml
+```
+
+
+
+```yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: spring-boot-project
+  name: spring-boot-project
+  namespace: kubernetes
+spec:
+  ports:
+  - name: web
+    port: 8761
+    protocol: TCP
+    targetPort: 8761
+  selector:
+    app: spring-boot-project
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  creationTimestamp: null
+  name: spring-boot-project
+  namespace: kubernetes
+spec:
+  rules:
+  - host: spring-boot-project.test.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: spring-boot-project
+            port: 
+              number: 8761
+        path: /
+        pathType: ImplementationSpecific
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: spring-boot-project
+  name: spring-boot-project
+  namespace: kubernetes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-boot-project
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: spring-boot-project
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - spring-boot-project
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - env:
+        - name: TZ
+          value: Asia/Shanghai
+        - name: LANG
+          value: C.UTF-8
+        image: nginx
+        imagePullPolicy: IfNotPresent
+        lifecycle: {}
+        livenessProbe:
+          failureThreshold: 2
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 8761
+          timeoutSeconds: 2
+        name: spring-boot-project
+        ports:
+        - containerPort: 8761
+          name: web
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 2
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 8761
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: 994m
+            memory: 1170Mi
+          requests:
+            cpu: 10m
+            memory: 55Mi
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: harborkey
+      restartPolicy: Always
+      securityContext: {}
+      serviceAccountName: default
+```
+
+
+
+运行该配置文件,创建所需资源
+
+```bash
+kubectl apply -f spring-boot-project.yaml
+```
+
+
+
+可选, 直接创建方式
+
+```yaml
 kubectl apply -f https://raw.githubusercontent.com/cloudzun/devopslab/main/spring-boot-project.yaml
 ```
 
-在Jenkins上创建项目，名称为spring-boot-project，类型为pipeline
 
-<figure><img src="https://pic3.zhimg.com/v2-475e721574ed8f31fa236867def055d2_b.jpg" alt=""><figcaption></figcaption></figure>
 
-使用[http://192.168.14.244/kubernetes/spring-boot-project.git](https://link.zhihu.com/?target=http%3A//192.168.14.244/kubernetes/spring-boot-project.git) 作为代码库
+## 创建 Jenkins Piepeline
 
-<figure><img src="https://pic1.zhimg.com/v2-2a48e0296504d83775f0cd06ead8b410_b.jpg" alt=""><figcaption></figcaption></figure>
+在 Jenkins 上创建项目，名称为 `spring-boot-project`，类型为 `pipeline`
+
+![image-20221227141905953](readme.assets/image-20221227141905953.png)
+
+
+
+使用 http://192.168.14.244/kubernetes/spring-boot-project.git  作为代码库
+
+![image-20221227141925341](readme.assets/image-20221227141925341.png)
 
 注意：因为项目属于公共项目可以不用输入credentials
 
-点击Build Now手动触发build过程
 
-<figure><img src="https://pic3.zhimg.com/v2-012c383f333939d60814043d820b6c66_b.jpg" alt=""><figcaption></figcaption></figure>
+
+## 手动触发构建项目
+
+点击 `Build Now` 手动触发构建过程
+
+![image-20221227142145963](readme.assets/image-20221227142145963.png)
+
+
 
 第一次触发会可能失败，报错信息为：
 
-```
+```text
 The specified working directory should be fully accessible to the remoting executable (RWX): /home/jenkins/agent
 ```
 
-<figure><img src="https://pic1.zhimg.com/v2-2b12a8596c6bf9a0deddee4662683f8c_b.jpg" alt=""><figcaption></figcaption></figure>
 
-解决方法在K8S节点上设置权限
 
-```
+![image-20221227142231547](readme.assets/image-20221227142231547.png)
+
+
+
+解决方法: 在 K8S 节点上设置权限
+
+```bash
 chmod -R 777 /opt/workspace
 ```
 
-再次使用build with Parameter创建
 
-<figure><img src="https://pic4.zhimg.com/v2-bafb1cf09dd926d6ba2f3994e96f6687_b.jpg" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="https://pic4.zhimg.com/v2-296a85a9cfd019e3340d98e599f52cfb_b.jpg" alt=""><figcaption></figcaption></figure>
+再次使用 `Build with Parameter` 创建
 
-<figure><img src="https://pic3.zhimg.com/v2-0cd79bbda59daf0d5d8af54f7daa107e_b.jpg" alt=""><figcaption></figcaption></figure>
+![image-20221227142321407](readme.assets/image-20221227142321407.png)
+
+
+
+![image-20221227142332488](readme.assets/image-20221227142332488.png)
+
+![image-20221227142400580](readme.assets/image-20221227142400580.png)
+
+
+
+完整的 Console Output 的输出如下,可以对照上一节涉及的 Jenkinsfiles
+
+```bash
+Started by user admin
+Obtained Jenkinsfile from git http://192.168.14.244/kubernetes/spring-boot-project.git
+[Pipeline] Start of Pipeline (hide)
+[Pipeline] podTemplate
+[Pipeline] {
+[Pipeline] node
+Created Pod: study-kubernetes default/spring-boot-project-3-748sp-mqvql-14bpd
+Agent spring-boot-project-3-748sp-mqvql-14bpd is provisioned from template spring-boot-project_3-748sp-mqvql
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  annotations:
+    buildUrl: "http://192.168.14.244:8080/job/spring-boot-project/3/"
+    runUrl: "job/spring-boot-project/3/"
+  labels:
+    jenkins: "slave"
+    jenkins/label-digest: "651737c27e09c58530bcccf39be7acde2cc59d65"
+    jenkins/label: "spring-boot-project_3-748sp"
+  name: "spring-boot-project-3-748sp-mqvql-14bpd"
+spec:
+  containers:
+  - args:
+    - "$(JENKINS_SECRET)"
+    - "$(JENKINS_NAME)"
+    env:
+    - name: "JENKINS_SECRET"
+      value: "********"
+    - name: "JENKINS_AGENT_NAME"
+      value: "spring-boot-project-3-748sp-mqvql-14bpd"
+    - name: "JENKINS_NAME"
+      value: "spring-boot-project-3-748sp-mqvql-14bpd"
+    - name: "JENKINS_AGENT_WORKDIR"
+      value: "/home/jenkins/agent"
+    - name: "JENKINS_URL"
+      value: "http://192.168.14.244:8080/"
+    image: "registry.cn-beijing.aliyuncs.com/citools/jnlp:alpine"
+    imagePullPolicy: "IfNotPresent"
+    name: "jnlp"
+    resources:
+      limits: {}
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+    volumeMounts:
+    - mountPath: "/etc/localtime"
+      name: "localtime"
+      readOnly: false
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - command:
+    - "cat"
+    env:
+    - name: "LANGUAGE"
+      value: "en_US:en"
+    - name: "LC_ALL"
+      value: "en_US.UTF-8"
+    - name: "LANG"
+      value: "en_US.UTF-8"
+    image: "registry.cn-beijing.aliyuncs.com/citools/maven:3.5.3"
+    imagePullPolicy: "IfNotPresent"
+    name: "build"
+    tty: true
+    volumeMounts:
+    - mountPath: "/etc/localtime"
+      name: "localtime"
+    - mountPath: "/root/.m2/"
+      name: "cachedir"
+      readOnly: false
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - command:
+    - "cat"
+    env:
+    - name: "LANGUAGE"
+      value: "en_US:en"
+    - name: "LC_ALL"
+      value: "en_US.UTF-8"
+    - name: "LANG"
+      value: "en_US.UTF-8"
+    image: "registry.cn-beijing.aliyuncs.com/citools/kubectl:self-1.17"
+    imagePullPolicy: "IfNotPresent"
+    name: "kubectl"
+    tty: true
+    volumeMounts:
+    - mountPath: "/etc/localtime"
+      name: "localtime"
+      readOnly: false
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - command:
+    - "cat"
+    env:
+    - name: "LANGUAGE"
+      value: "en_US:en"
+    - name: "LC_ALL"
+      value: "en_US.UTF-8"
+    - name: "LANG"
+      value: "en_US.UTF-8"
+    image: "registry.cn-beijing.aliyuncs.com/citools/docker:19.03.9-git"
+    imagePullPolicy: "IfNotPresent"
+    name: "docker"
+    tty: true
+    volumeMounts:
+    - mountPath: "/etc/localtime"
+      name: "localtime"
+      readOnly: false
+    - mountPath: "/var/run/docker.sock"
+      name: "dockersock"
+      readOnly: false
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  nodeSelector:
+    build: "true"
+  restartPolicy: "Never"
+  securityContext: {}
+  volumes:
+  - hostPath:
+      path: "/usr/share/zoneinfo/Asia/Shanghai"
+    name: "localtime"
+  - hostPath:
+      path: "/opt/m2"
+    name: "cachedir"
+  - hostPath:
+      path: "/var/run/docker.sock"
+    name: "dockersock"
+  - hostPath:
+      path: "/opt/workspace"
+    name: "workspace-volume"
+
+Running on spring-boot-project-3-748sp-mqvql-14bpd in /home/jenkins/agent/workspace/spring-boot-project
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: NONE
+No credentials specified
+Fetching changes from the remote Git repository
+ > git rev-parse --resolve-git-dir /home/jenkins/agent/workspace/spring-boot-project/.git # timeout=10
+ > git config remote.origin.url http://192.168.14.244/kubernetes/spring-boot-project.git # timeout=10
+Fetching upstream changes from http://192.168.14.244/kubernetes/spring-boot-project.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.20.1'
+ > git fetch --tags --force --progress -- http://192.168.14.244/kubernetes/spring-boot-project.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Checking out Revision 8c1ca444666963019de497366676ad4cd16e2d8d (refs/remotes/origin/master)
+Commit message: "Update Jenkinsfile"
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 8c1ca444666963019de497366676ad4cd16e2d8d # timeout=10
+ > git rev-list --no-walk b181102f0c645531d7bc8d688a03f1c00bfa8a1d # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Pulling Code)
+[Pipeline] parallel
+[Pipeline] { (Branch: Pulling Code by Jenkins)
+[Pipeline] { (Branch: Pulling Code by trigger)
+[Pipeline] stage
+[Pipeline] { (Pulling Code by Jenkins)
+[Pipeline] stage
+[Pipeline] { (Pulling Code by trigger)
+Stage "Pulling Code by trigger" skipped due to when conditional
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] git
+The recommended git tool is: NONE
+Warning: CredentialId "gitlab" could not be found.
+Fetching changes from the remote Git repository
+Checking out Revision 8c1ca444666963019de497366676ad4cd16e2d8d (refs/remotes/origin/master)
+Commit message: "Update Jenkinsfile"
+[Pipeline] script
+[Pipeline] {
+[Pipeline] sh
++ git log -n 1 '--pretty=format:%h'
+[Pipeline] echo
+Current branch is master, Commit ID is 8c1ca44, Image TAG is jenkins-spring-boot-project-3-8c1ca44
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // parallel
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Building)
+ > git rev-parse --resolve-git-dir /home/jenkins/agent/workspace/spring-boot-project/.git # timeout=10
+ > git config remote.origin.url http://192.168.14.244/kubernetes/spring-boot-project.git # timeout=10
+Fetching upstream changes from http://192.168.14.244/kubernetes/spring-boot-project.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.20.1'
+ > git fetch --tags --force --progress -- http://192.168.14.244/kubernetes/spring-boot-project.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 8c1ca444666963019de497366676ad4cd16e2d8d # timeout=10
+ > git branch -a -v --no-abbrev # timeout=10
+ > git branch -D master # timeout=10
+ > git checkout -b master 8c1ca444666963019de497366676ad4cd16e2d8d # timeout=10
+[Pipeline] container
+[Pipeline] {
+[Pipeline] sh
++ curl repo.maven.apache.org
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+100   139  100   139    0     0     70      0  0:00:01  0:00:01 --:--:--    70
+501 HTTPS Required. 
+Use https://repo.maven.apache.org/maven2/
+More information at https://links.sonatype.com/central/501-https-required
+  + mvn clean install -DskipTests
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< com.testjava:spring-cloud-eureka >------------------
+[INFO] Building spring-cloud-eureka 0.0.1-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-clean-plugin:3.1.0:clean (default-clean) @ spring-cloud-eureka ---
+[INFO] Deleting /home/jenkins/agent/workspace/spring-boot-project/target
+[INFO] 
+[INFO] --- maven-resources-plugin:3.1.0:resources (default-resources) @ spring-cloud-eureka ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 1 resource
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.1:compile (default-compile) @ spring-cloud-eureka ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 1 source file to /home/jenkins/agent/workspace/spring-boot-project/target/classes
+[INFO] 
+[INFO] --- maven-resources-plugin:3.1.0:testResources (default-testResources) @ spring-cloud-eureka ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /home/jenkins/agent/workspace/spring-boot-project/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.1:testCompile (default-testCompile) @ spring-cloud-eureka ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- maven-surefire-plugin:2.22.2:test (default-test) @ spring-cloud-eureka ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- maven-jar-plugin:3.1.2:jar (default-jar) @ spring-cloud-eureka ---
+[INFO] Building jar: /home/jenkins/agent/workspace/spring-boot-project/target/spring-cloud-eureka-0.0.1-SNAPSHOT.jar
+[INFO] 
+[INFO] --- spring-boot-maven-plugin:2.1.9.RELEASE:repackage (repackage) @ spring-cloud-eureka ---
+[INFO] Replacing main artifact with repackaged archive
+[INFO] 
+[INFO] --- maven-install-plugin:2.5.2:install (default-install) @ spring-cloud-eureka ---
+[INFO] Installing /home/jenkins/agent/workspace/spring-boot-project/target/spring-cloud-eureka-0.0.1-SNAPSHOT.jar to /root/.m2/repository/com/testjava/spring-cloud-eureka/0.0.1-SNAPSHOT/spring-cloud-eureka-0.0.1-SNAPSHOT.jar
+[INFO] Installing /home/jenkins/agent/workspace/spring-boot-project/pom.xml to /root/.m2/repository/com/testjava/spring-cloud-eureka/0.0.1-SNAPSHOT/spring-cloud-eureka-0.0.1-SNAPSHOT.pom
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 5.715 s
+[INFO] Finished at: 2022-10-06T04:24:56Z
+[INFO] ------------------------------------------------------------------------
++ ls target/classes target/generated-sources target/maven-archiver target/maven-status target/spring-cloud-eureka-0.0.1-SNAPSHOT.jar target/spring-cloud-eureka-0.0.1-SNAPSHOT.jar.original
+target/spring-cloud-eureka-0.0.1-SNAPSHOT.jar
+target/spring-cloud-eureka-0.0.1-SNAPSHOT.jar.original
+
+target/classes:
+application.yml
+com
+logback.xml
+
+target/generated-sources:
+annotations
+
+target/maven-archiver:
+pom.properties
+
+target/maven-status:
+maven-compiler-plugin
+[Pipeline] }
+[Pipeline] // container
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Docker build for creating image)
+[Pipeline] withCredentials
+Masking supported pattern matches of $HARBOR_USER or $HARBOR_USER_PSW
+[Pipeline] {
+[Pipeline] container
+[Pipeline] {
+[Pipeline] sh
+Warning: A secret was passed to "sh" using Groovy String interpolation, which is insecure.
+		 Affected argument(s) used the following variable(s): [HARBOR_USER_PSW]
+		 See https://jenkins.io/redirect/groovy-string-interpolation for details.
++ echo admin **** jenkins-spring-boot-project-3-8c1ca44
+admin **** jenkins-spring-boot-project-3-8c1ca44
++ docker build -t 192.168.14.244:5000/kubernetes/spring-boot-project:jenkins-spring-boot-project-3-8c1ca44 .
+Sending build context to Docker daemon  47.36MB
+
+Step 1/3 : FROM registry.cn-beijing.aliyuncs.com/dotbalo/jre:8u211-data
+ ---> b1c16eb1456d
+Step 2/3 : COPY target/spring-cloud-eureka-0.0.1-SNAPSHOT.jar ./
+ ---> f08ef921446d
+Step 3/3 : CMD java -jar spring-cloud-eureka-0.0.1-SNAPSHOT.jar
+ ---> Running in 981a789849c5
+Removing intermediate container 981a789849c5
+ ---> 98c1b112bd17
+Successfully built 98c1b112bd17
+Successfully tagged 192.168.14.244:5000/kubernetes/spring-boot-project:jenkins-spring-boot-project-3-8c1ca44
++ docker login -u admin -p **** 192.168.14.244:5000
+WARNING! Using --password via the CLI is insecure. Use --password-stdin.
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
++ docker push 192.168.14.244:5000/kubernetes/spring-boot-project:jenkins-spring-boot-project-3-8c1ca44
+The push refers to repository [192.168.14.244:5000/kubernetes/spring-boot-project]
+c7ea2ffdd3f2: Preparing
+eff47b948517: Preparing
+f25edfe5114d: Preparing
+46f3c01a700a: Preparing
+37cd0af63488: Preparing
+ed211f7d10e3: Preparing
+f1b5933fe4b5: Preparing
+ed211f7d10e3: Waiting
+f1b5933fe4b5: Waiting
+eff47b948517: Pushed
+f25edfe5114d: Pushed
+46f3c01a700a: Pushed
+f1b5933fe4b5: Pushed
+ed211f7d10e3: Pushed
+c7ea2ffdd3f2: Pushed
+37cd0af63488: Pushed
+jenkins-spring-boot-project-3-8c1ca44: digest: sha256:e3c5e5194397ed7bcbb7626613d27cff20fbd87f1c6e9f8d700c1fb11cfdde8d size: 1785
+[Pipeline] }
+[Pipeline] // container
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploying to K8s)
+[Pipeline] withCredentials
+Masking supported pattern matches of $MY_KUBECONFIG
+[Pipeline] {
+[Pipeline] container
+[Pipeline] {
+[Pipeline] sh
+Warning: A secret was passed to "sh" using Groovy String interpolation, which is insecure.
+		 Affected argument(s) used the following variable(s): [MY_KUBECONFIG]
+		 See https://jenkins.io/redirect/groovy-string-interpolation for details.
++ /usr/local/bin/kubectl --kubeconfig **** set image deploy -l 'app=spring-boot-project' 'spring-boot-project=192.168.14.244:5000/kubernetes/spring-boot-project:jenkins-spring-boot-project-3-8c1ca44' -n kubernetes
+deployment.apps/spring-boot-project image updated
+[Pipeline] }
+[Pipeline] // container
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // podTemplate
+[Pipeline] End of Pipeline
+Finished: SUCCESS
+```
+
+
+
+## 验证项目构建效果
 
 使用Blue Ocean查看pipeline运行过程
 
-<figure><img src="https://pic4.zhimg.com/v2-d86f6373cc3c283cd73343055c3125af_b.jpg" alt=""><figcaption></figcaption></figure>
+![image-20221227143202442](readme.assets/image-20221227143202442.png)
 
-查看Harbor映像库
 
-<figure><img src="https://pic2.zhimg.com/v2-96565aa6d62dce7f2d4cd23d8be0d619_b.jpg" alt=""><figcaption></figcaption></figure>
 
-Pipeline运行结束之后进行验证 [http://k8s:30080](https://link.zhihu.com/?target=http%3A//k8s%3A30080)
+查看 Harbor 映像库
 
-```
+![image-20221227143230018](readme.assets/image-20221227143230018.png)
+
+
+
+为应用的服务设置 nodeport 端口
+
+```bash
 kubectl patch svc -n kubernetes spring-boot-project  -p '{"spec":{"type": "NodePort"}}'
 ```
 
-```
+
+
+```bash
 kubectl patch service spring-boot-project --namespace=kubernetes spring-boot-project --type='json' --patch='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30080}]'
 ```
 
-<figure><img src="https://pic2.zhimg.com/v2-e83cc39be3091ed92a363b38646a9fbd_b.jpg" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="https://pic1.zhimg.com/v2-047552b9363f3f27b886f254636fa0b4_b.jpg" alt=""><figcaption></figcaption></figure>
+
+在浏览器上访问该服务
+
+![image-20221227143511466](readme.assets/image-20221227143511466.png)
+
+
+
+![image-20221227143528806](readme.assets/image-20221227143528806.png)
+
+
 
 在k8s节点上检查项目对应的工作负载和服务
 
-```
+```bash
 kubectl get pod -n kubernetes -o wide
-```
-
-```
 kubectl get svc -n kubernetes -o wide
-```
-
-```
 kubectl get deployment -n kubernetes -o wide
 ```
 
-<figure><img src="https://pic3.zhimg.com/v2-3d1e49414b0c4dc95561e2aec7f6ad16_b.png" alt=""><figcaption></figcaption></figure>
 
-实验圆满结束，如果运行有问题，或者需要更多的解释或说明，请留言或者私信，谢谢！
+
+```bash
+root@node:~# kubectl get pod -n kubernetes -o wide
+NAME                                   READY   STATUS    RESTARTS   AGE   IP               NODE   NOMINATED NODE   READINESS GATES
+spring-boot-project-545ff8cbf9-xkgmk   1/1     Running   0          76s   10.244.167.153   node   <none>           <none>
+root@node:~# kubectl get svc -n kubernetes -o wide
+NAME                  TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE   SELECTOR
+spring-boot-project   NodePort   10.101.175.61   <none>        8761:30080/TCP   82d   app=spring-boot-project
+root@node:~# kubectl get deployment -n kubernetes -o wide
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS            IMAGES                                                                                     SELECTOR
+spring-boot-project   1/1     1            1           82d   spring-boot-project   192.168.14.244:5000/kubernetes/spring-boot-project:jenkins-spring-boot-project-4-8c1ca44   app=spring-boot-project
+```
+
