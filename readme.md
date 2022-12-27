@@ -1232,7 +1232,7 @@ Data
 
 
 
-# 构建 spring-boot-project 脚手架项目
+# 构建脚手架项目
 
 
 
@@ -1886,4 +1886,251 @@ root@node:~# kubectl get deployment -n kubernetes -o wide
 NAME                  READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS            IMAGES                                                                                     SELECTOR
 spring-boot-project   1/1     1            1           82d   spring-boot-project   192.168.14.244:5000/kubernetes/spring-boot-project:jenkins-spring-boot-project-4-8c1ca44   app=spring-boot-project
 ```
+
+
+
+
+
+ 
+
+# 创建自动触发流水线
+
+## 准备K8S环境
+
+```bash
+kubectl  apply -f https://raw.githubusercontent.com/cloudzun/devopslab/main/go-project.yaml 
+kubectl  patch svc -n kubernetes go-project -p  '{"spec":{"type": "NodePort"}}'     
+kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch='[{"op": "replace", "path":  "/spec/ports/0/nodePort", "value":30800}]'  
+```
+
+ 
+
+## 设置Gitlab
+
+从Admin Settings  Network  页面 (http://192.168.14.244/admin/application_settings/network）
+
+选择 `Allow requests to the local network from web hooks and services`
+
+![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image090.jpg)
+
+ 
+
+从 https://github.com/cloudzun/go-project 导入 go-project 项目
+
+![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image092.jpg)
+
+ 
+
+## 创建 pipeline 项目并配置自动触发
+
+填充代码库路径：http://192.168.14.244/kubernetes/go-project
+
+![图形用户界面, 文本, 应用程序  描述已自动生成](readme.assets/clip_image094.jpg)
+
+ 
+
+启用 `Build Triggers`
+
+![img](readme.assets/clip_image096.jpg)
+
+​     记录此处的webhook地址
+
+ 
+
+展开高级，创建 `Secret token`
+
+![img](readme.assets/clip_image098.jpg)
+
+​     记录此处的token
+
+ 
+
+在Gitlab代码库创建webhook ( http://192.168.14.244/kubernetes/go-project/-/hooks )
+
+![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image100.jpg)
+
+ 
+
+测试 Hooks
+
+![图形用户界面, 应用程序  描述已自动生成](readme.assets/clip_image102.jpg)
+
+ 
+
+![图形用户界面, 应用程序  描述已自动生成](readme.assets/clip_image104.jpg)
+
+ 
+
+观察pipeline运行情况
+
+![图形用户界面  描述已自动生成](readme.assets/clip_image106.jpg)
+
+ 
+
+## 使用code commit 触发流水线，
+
+修改项目库里的代码并提交
+
+![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image108.jpg)
+
+ 
+
+观察pipeline运行情况 
+
+![img](readme.assets/clip_image110.jpg)
+
+ 
+
+验证服务页面：http://192.168.14.204:30801/api/index.html
+
+![img](readme.assets/clip_image112.jpg)
+
+观察Harbor映像库中的最新映像版本
+
+![img](readme.assets/clip_image114.jpg)
+
+
+
+ 
+
+# 创建UAT和生产环境流水线
+
+## 准备 K8S 环境
+
+```bash
+kubectl  create ns uat    
+kubectl  apply -f https://raw.githubusercontent.com/cloudzun/devopslab/main/uat-go-project.yaml 
+kubectl  patch svc -n uat go-project -p  '{"spec":{"type": "NodePort"}}'    
+kubectl  patch service go-project --namespace=uat --type='json'  --patch='[{"op": "replace", "path":  "/spec/ports/0/nodePort", "value":30801}]'  
+```
+
+ 
+
+## 创建 pipeline 项目
+
+启用 `This project is parameterized`，并填充以下属性，
+
+然后点击高级，填充 `Registry URL` 和 `Credential ID`
+
+![img](readme.assets/clip_image116.jpg)
+
+ 
+
+填充pipeline脚本
+
+范例见：https://github.com/cloudzun/devopslab/blob/main/UATPipeline
+
+```yaml
+pipeline {
+     agent {
+    kubernetes {
+      cloud 'study-kubernetes'
+      slaveConnectTimeout 1200
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    # 只需要配置jnlp和kubectl镜像即可
+    - args: [\'$(JENKINS_SECRET)\', \'$(JENKINS_NAME)\']
+      image: 'registry.cn-beijing.aliyuncs.com/citools/jnlp:alpine'
+      name: jnlp
+      imagePullPolicy: IfNotPresent
+    - command:
+        - "cat"
+      env:
+        - name: "LANGUAGE"
+          value: "en_US:en"
+        - name: "LC_ALL"
+          value: "en_US.UTF-8"
+        - name: "LANG"
+          value: "en_US.UTF-8"
+      image: "registry.cn-beijing.aliyuncs.com/citools/kubectl:self-1.17"
+      imagePullPolicy: "IfNotPresent"
+      name: "kubectl"
+      tty: true
+  restartPolicy: "Never"
+'''
+    }	
+}
+
+   stages {
+      stage('Deploy') {
+		environment {
+			MY_KUBECONFIG = credentials('study-kubernetes')
+		}
+         steps {
+		 container(name: 'kubectl'){
+            sh """
+               echo ${IMAGE_TAG} # 该变量即为前台选择的镜像
+               kubectl --kubeconfig=${MY_KUBECONFIG} set image deployment -l app=${IMAGE_NAME} ${IMAGE_NAME}=${HARBOR_ADDRESS}/${IMAGE_TAG} -n ${NAMESPACE}
+            """
+         }
+		}
+      }
+   }
+   environment {
+    HARBOR_ADDRESS = "192.168.14.244:5000"
+    NAMESPACE = "uat"
+    IMAGE_NAME = "go-project"
+    TAG = ""
+  }
+}
+```
+
+
+
+![img](readme.assets/clip_image118.jpg)
+
+ 
+
+## 在UAT环境中部署1.0版本的服务
+
+使用`Build with Parameters`，并在 IMAGE_TAG 里选择最新版本进行部署
+
+![img](readme.assets/clip_image120.jpg)
+
+ 
+
+观察pipeline运行过程
+
+![图形用户界面, 网站  描述已自动生成](readme.assets/clip_image122.jpg)
+
+ 
+
+验证页面：http://192.168.14.204:30801/api/index.html
+
+![img](readme.assets/clip_image124.jpg)
+
+## 将开发环境中的代码迭代到2.0
+
+![img](readme.assets/clip_image126.jpg)
+
+ 
+
+![img](readme.assets/clip_image128.jpg)
+
+
+
+![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image130.jpg)
+
+ 
+
+![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image132.jpg)
+
+ 
+
+## 迭代UAT环境到2.0
+
+![图形用户界面, 文本, 应用程序  描述已自动生成](readme.assets/clip_image134.jpg)
+
+
+
+ 
+
+![img](readme.assets/clip_image136.jpg)
+
+ 
+
+![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image138.jpg)
 
