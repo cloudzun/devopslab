@@ -171,7 +171,7 @@ docker logs -f jenkins_jenkins_1
 2022-12-27 01:54:53.921+0000 [id=20]    INFO    hudson.WebAppMain$3#run: Jenkins is fully up and running
 ```
 
-等待看到Jenkins is fully up and running字样说明安装成功
+等待看到 `Jenkins is fully up and running` 字样说明安装成功
 
 
 
@@ -226,7 +226,7 @@ docker logs -f jenkins_jenkins_1
 
 
 
-创建目录或进入目录
+创建 gitlab 目录或进入目录
 
 ```bash
 root@dockerlab:~/devopslab/gitlab# pwd
@@ -271,7 +271,7 @@ services:
 
 
 
-安装gitlab
+安装 gitlab
 
 ```bash
 docker-compose up -d 
@@ -299,7 +299,7 @@ Creating gitlab_Gitlab_1 ... done
 
 
 
-查看安装进度，确认gitlab容器的状态为：healthy
+查看安装进度，确认 gitlab 容器的状态为：healthy
 
 ```bash
 docker ps
@@ -338,7 +338,7 @@ Password: +fZLbARlex/yriLeVG71RSfSxEMKkBxKkdysWB82h+E=
 
 
 
-使用root和初始化密码登录到服务器，并修改密码
+使用root和初始化密码登录到Gitlab Portal http://192.168.14.244 ，并修改密码
 
 ![image-20221227102713071](readme.assets/image-20221227102713071.png)
 
@@ -385,6 +385,7 @@ git clone http://192.168.14.244/kubernetes/cloudzun.git
 git config --global user.email info@cloudzun.com
 git config --global user.name "Abraham Cheng"
 ```
+
 
 
 针对文件做些修改，或者增加一些文件
@@ -728,7 +729,7 @@ a5001f2f81a8   gitlab/gitlab-ce:latest                 "/assets/wrapper"        
 
 
 
-登录到 harbor portal
+登录到 harbor portal http://192.168.14.244:5000
 
 ![image-20221227111137127](readme.assets/image-20221227111137127.png)
 
@@ -738,7 +739,8 @@ a5001f2f81a8   gitlab/gitlab-ce:latest                 "/assets/wrapper"        
 ![image-20221227111159786](readme.assets/image-20221227111159786.png)
 
 
-测试映像上传, 首先需要修改daemon.json
+
+测试映像上传, 首先需要修改当前机器的 daemon.json
 
 ```bash
 cat > /etc/docker/daemon.json << EOF
@@ -754,6 +756,8 @@ cat > /etc/docker/daemon.json << EOF
 }
 EOF
 ```
+
+注意: 因为 harbor 没采用 https 模式,因此需要增加  `"insecure-registries": ["192.168.14.244:5000"]`
 
 
 
@@ -938,7 +942,7 @@ systemctl enable docker
 
 配置凭据: (http://192.168.14.244:8080/credentials/store/system/domain/_/)
 
-配置kubernetes证书（ kind: secret file id: study-kubernetes）
+配置kubernetes证书（ kind: `secret file` id: `study-kubernetes`）
 
 ![image-20221227132712116](readme.assets/image-20221227132712116.png)
 
@@ -980,9 +984,9 @@ systemctl enable docker
 
 ![image-20221227133609927](readme.assets/image-20221227133609927.png)
 
-
-
 注意：新导入的公共项目组的地址：[http://192.168.14.244/kubernetes/spring-boot-project.git]
+
+
 
 对项目中的 Jenkins 文件做必要调整:
 
@@ -1178,9 +1182,7 @@ spec:
 }
 ```
 
-
-
-- 104行 123行的项目`url:` 地址更新为当前项目地址
+-  104行 123行的项目`url:` 地址更新为当前项目地址
 - 180行的 `HARBOR\_ADDRESS` 替换位当前 harbor 地址（如果未使用80端口，则需要替换端口）
 
 
@@ -1465,7 +1467,7 @@ chmod -R 777 /opt/workspace
 
 
 
-完整的 Console Output 的输出如下,可以对照上一节涉及的 Jenkinsfiles
+完整的 Console Output 的输出如下,可以对照上一节涉及的 Jenkinsfiles 进行过程分析
 
 ```bash
 Started by user admin
@@ -1849,7 +1851,7 @@ Finished: SUCCESS
 
 
 
-使用Blue Ocean查看pipeline运行过程
+使用Blue Ocean查看 pipeline 运行过程
 
 ![image-20221227143202442](readme.assets/image-20221227143202442.png)
 
@@ -1969,11 +1971,11 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
 ![img](readme.assets/clip_image098.jpg)
 
-​     记录此处的token
+​     记录此处的 token
 
  
 
-在Gitlab代码库创建webhook ( http://192.168.14.244/kubernetes/go-project/-/hooks )
+在 Gitlab 代码库创建 webhook ( http://192.168.14.244/kubernetes/go-project/-/hooks )
 
 ![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image100.jpg)
 
@@ -1989,7 +1991,7 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
  
 
-观察pipeline运行情况
+观察 pipeline 运行情况
 
 ![图形用户界面  描述已自动生成](readme.assets/clip_image106.jpg)
 
@@ -2005,7 +2007,7 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
  
 
-观察pipeline运行情况 
+观察 pipeline 运行情况 
 
 ![img](readme.assets/clip_image110.jpg)
 
@@ -2052,7 +2054,7 @@ kubectl  patch service go-project --namespace=uat --type='json'  --patch='[{"op"
 
  
 
-填充pipeline脚本
+填充 pipeline 脚本
 
 范例见：https://github.com/cloudzun/devopslab/blob/main/UATPipeline
 
@@ -2120,7 +2122,7 @@ spec:
 
  
 
-## 在UAT环境中部署1.0版本的服务
+## 在 UAT 环境中部署 1.0 版本的服务
 
 
 
@@ -2140,7 +2142,7 @@ spec:
 
 ![img](readme.assets/clip_image124.jpg)
 
-## 将开发环境中的代码迭代到2.0
+## 将开发环境中的代码迭代到 2.0 
 
 
 
@@ -2160,7 +2162,7 @@ spec:
 
  
 
-## 迭代UAT环境到2.0
+## 迭代 UAT 环境到 2.0
 
 
 
