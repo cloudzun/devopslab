@@ -1,4 +1,4 @@
-# 创建 Jenkins + GitLab + Harbor + K8S 环境并构建 Spring Boot 项目
+[TOC]
 
 环境介绍：
 
@@ -8,7 +8,7 @@
 
 
 
-# 环境初始化安装
+# DevOps 工具链初始化安装
 
 
 
@@ -913,7 +913,7 @@ systemctl enable docker
 
 
 
-# 环境整合配置
+# DevOps 工具链整合配置
 
 
 
@@ -2023,7 +2023,7 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
  
 
-# 创建UAT和生产环境流水线
+# 创建 UAT 和生产环境流水线
 
 
 
