@@ -8,7 +8,7 @@
 
 
 
-# Lab 1: 环境初始化安装
+# 环境初始化安装
 
 
 
@@ -65,7 +65,7 @@ git clone https://github.com/cloudzun/devopslab
 
 
 
-## **部署 Jenkins **
+## 部署 Jenkins 
 
 
 
@@ -219,7 +219,7 @@ docker logs -f jenkins_jenkins_1
 
 
 
-## **部署 GitLab**
+## 部署 GitLab
 
 创建目录或进入目录
 
@@ -429,7 +429,7 @@ To http://192.168.14.244/kubernetes/cloudzun.git
 
 
 
-## **部署 Harbor**
+## 部署 Harbor
 
 下载安装文件
 
@@ -844,9 +844,9 @@ docker run -d -p 2048:80  192.168.14.244:5000/chengzh/docker-2048
 
 
 
-## **创建测试 K8S 群集（单节点群集）**
+## K8S 群集的初始化配置
 
-按照常规步骤安装K8S之后，执行以下操作：
+首先按照常规步骤安装 单节点 K8S 群集
 
 
 
@@ -906,99 +906,304 @@ systemctl enable docker
 
 
 
-# 第二部分，环境整合配置
-
-**配置Jenkins**\
-配置jenkins location\
-在 [http://192.168.14.244:8080/configure](https://link.zhihu.com/?target=http%3A//192.168.14.244%3A8080/configure) 确认Jenkins URL\
+# 环境整合配置
 
 
-<figure><img src="https://pic3.zhimg.com/v2-003db8754532b7e97e432bb5d06966be_b.jpg" alt=""><figcaption></figcaption></figure>
 
-\
-配置agent\
-在[http://192.168.14.244:8080/configureSecurity/](https://link.zhihu.com/?target=http%3A//192.168.14.244%3A8080/configureSecurity/) 上启用50000端口\
+## 配置 Jenkins
 
+配置jenkins location
 
-<figure><img src="https://pic1.zhimg.com/v2-ff3a27cef393212ee426241028586348_b.jpg" alt=""><figcaption></figcaption></figure>
+在 http://192.168.14.244:8080/configure 确认 `Jenkins URL`
 
-\
-配置凭据在 [http://192.168.14.244:8080/credentials/store/system/domain/\_/](https://link.zhihu.com/?target=http%3A//192.168.14.244%3A8080/credentials/store/system/domain/\_/)\
-配置kubernetes证书（ kind: secret file id: study-kubernetes）\
+![image-20221227132529493](readme.assets/image-20221227132529493.png)
 
 
-<figure><img src="https://pic2.zhimg.com/v2-d795c3200183230a741fbe8e42da40b5_b.jpg" alt=""><figcaption></figcaption></figure>
 
-\
-配置Harbor账号密码 id: HARBOR\_ACCOUNT\
+配置 `agent`
+在http://192.168.14.244:8080/configureSecurity/ 上启用 `50000` 端口
 
-
-<figure><img src="https://pic2.zhimg.com/v2-3c448c58a775ab1cb842b5cb89820ef5_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-配置gitlab key(可选)\
-创建cloud\
-[http://192.168.14.244:8080/configureClouds/](https://link.zhihu.com/?target=http%3A//192.168.14.244%3A8080/configureClouds/)\
-（id：study-kubernetes）\
+![image-20221227132617774](readme.assets/image-20221227132617774.png)
 
 
-<figure><img src="https://pic3.zhimg.com/v2-7450da18decb69992724385b3df665ea_b.jpg" alt=""><figcaption></figcaption></figure>
+配置凭据: 在 http://192.168.14.244:8080/credentials/store/system/domain/_/
 
-**配置Harbor**\
-创建公共项目：kubernetes\
+配置kubernetes证书（ kind: secret file id: study-kubernetes）
 
-
-<figure><img src="https://pic3.zhimg.com/v2-74338adc792b16341637bf7c3fec8daa_b.jpg" alt=""><figcaption></figcaption></figure>
-
-**配置GitLab**\
-创建公共组：kubernetes\
-在上述公共项目组内导入项目：[https://github.com/cloudzun/spring-boot-project](https://link.zhihu.com/?target=https%3A//github.com/cloudzun/spring-boot-project)\
+![image-20221227132712116](readme.assets/image-20221227132712116.png)
 
 
-<figure><img src="https://pic2.zhimg.com/v2-0be80d9efc898c523741a755cb83b065_b.jpg" alt=""><figcaption></figcaption></figure>
 
-\
-注意：新导入的公共项目组的地址：[http://192.168.14.244/kubernetes/spring-boot-project.git](https://link.zhihu.com/?target=http%3A//192.168.14.244/kubernetes/spring-boot-project.git)\
-对项目中的Jenkins文件做必要调整\
-104行 123行的项目url: 地址更新为当前项目地址\
+配置 Harbor 账号密码 `id: HARBOR\_ACCOUNT`
+
+![image-20221227132746457](readme.assets/image-20221227132746457.png)
 
 
-<figure><img src="https://pic2.zhimg.com/v2-3c07eeb1fe4c9ef264e3c6be48d6d2a5_b.jpg" alt=""><figcaption></figcaption></figure>
-
-\
-180行的HARBOR\_ADDRESS替换位当前harbor地址（如果未使用80端口，则需要替换端口）\
+配置gitlab key(可选)
 
 
-<figure><img src="https://pic2.zhimg.com/v2-006693df9e17cab8c355eb010e996df5_b.jpg" alt=""><figcaption></figcaption></figure>
 
-\
-注意：可参照[https://github.com/cloudzun/devopslab/blob/main/Jenkinsfile](https://link.zhihu.com/?target=https%3A//github.com/cloudzun/devopslab/blob/main/Jenkinsfile)
+创建cloud (http://192.168.14.244:8080/configureClouds/ )
 
-**配置K8S**
+ 使用 id：`study-kubernetes`
+
+![image-20221227132927966](readme.assets/image-20221227132927966.png)
+
+
+
+## 配置Harbor
+
+
+
+创建公共项目：`kubernetes`
+
+
+
+
+
+## 配置GitLab
+
+创建公共组：`kubernetes`
+在此前创建的公共项目组内导入项目：：https://github.com/cloudzun/spring-boot-project
+
+![image-20221227133609927](readme.assets/image-20221227133609927.png)
+
+
+
+注意：新导入的公共项目组的地址：[http://192.168.14.244/kubernetes/spring-boot-project.git]
+
+对项目中的Jenkins文件做必要调整:
+
+```yaml
+pipeline {
+  agent {
+    kubernetes {
+      cloud 'study-kubernetes'
+      slaveConnectTimeout 1200
+      workspaceVolume hostPathWorkspaceVolume(hostPath: "/opt/workspace", readOnly: false)
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - args: [\'$(JENKINS_SECRET)\', \'$(JENKINS_NAME)\']
+      image: 'registry.cn-beijing.aliyuncs.com/citools/jnlp:alpine'
+      name: jnlp
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - mountPath: "/etc/localtime"
+          name: "localtime"
+          readOnly: false     
+    - command:
+        - "cat"
+      env:
+        - name: "LANGUAGE"
+          value: "en_US:en"
+        - name: "LC_ALL"
+          value: "en_US.UTF-8"
+        - name: "LANG"
+          value: "en_US.UTF-8"
+      image: "registry.cn-beijing.aliyuncs.com/citools/maven:3.5.3"
+      imagePullPolicy: "IfNotPresent"
+      name: "build"
+      tty: true
+      volumeMounts:
+        - mountPath: "/etc/localtime"
+          name: "localtime"
+        - mountPath: "/root/.m2/"
+          name: "cachedir"
+          readOnly: false
+    - command:
+        - "cat"
+      env:
+        - name: "LANGUAGE"
+          value: "en_US:en"
+        - name: "LC_ALL"
+          value: "en_US.UTF-8"
+        - name: "LANG"
+          value: "en_US.UTF-8"
+      image: "registry.cn-beijing.aliyuncs.com/citools/kubectl:self-1.17"
+      imagePullPolicy: "IfNotPresent"
+      name: "kubectl"
+      tty: true
+      volumeMounts:
+        - mountPath: "/etc/localtime"
+          name: "localtime"
+          readOnly: false
+    - command:
+        - "cat"
+      env:
+        - name: "LANGUAGE"
+          value: "en_US:en"
+        - name: "LC_ALL"
+          value: "en_US.UTF-8"
+        - name: "LANG"
+          value: "en_US.UTF-8"
+      image: "registry.cn-beijing.aliyuncs.com/citools/docker:19.03.9-git"
+      imagePullPolicy: "IfNotPresent"
+      name: "docker"
+      tty: true
+      volumeMounts:
+        - mountPath: "/etc/localtime"
+          name: "localtime"
+          readOnly: false
+        - mountPath: "/var/run/docker.sock"
+          name: "dockersock"
+          readOnly: false
+  restartPolicy: "Never"
+  nodeSelector:
+    build: "true"
+  securityContext: {}
+  volumes:
+    - hostPath:
+        path: "/var/run/docker.sock"
+      name: "dockersock"
+    - hostPath:
+        path: "/usr/share/zoneinfo/Asia/Shanghai"
+      name: "localtime"
+    - name: "cachedir"
+      hostPath:
+        path: "/opt/m2"
+'''
+    }   
+}
+  stages {
+    stage('Pulling Code') {
+      parallel {
+        stage('Pulling Code by Jenkins') {
+          when {
+            expression {
+              env.gitlabBranch == null
+            }
+
+          }
+          steps {
+            git(changelog: true, poll: true, url: 'http://192.168.14.244/kubernetes/spring-boot-project.git', branch: "${BRANCH}", credentialsId: 'gitlab')
+            script {
+              COMMIT_ID = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+              TAG = BUILD_TAG + '-' + COMMIT_ID
+              println "Current branch is ${BRANCH}, Commit ID is ${COMMIT_ID}, Image TAG is ${TAG}"
+              
+            }
+
+          }
+        }
+
+        stage('Pulling Code by trigger') {
+          when {
+            expression {
+              env.gitlabBranch != null
+            }
+
+          }
+          steps {
+            git(url: 'http://192.168.14.244/kubernetes/spring-boot-project.git', branch: env.gitlabBranch, changelog: true, poll: true, credentialsId: 'gitlab')
+            script {
+              COMMIT_ID = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+              TAG = BUILD_TAG + '-' + COMMIT_ID
+              println "Current branch is ${env.gitlabBranch}, Commit ID is ${COMMIT_ID}, Image TAG is ${TAG}"
+            }
+
+          }
+        }
+
+      }
+    }
+
+    stage('Building') {
+      steps {
+        container(name: 'build') {
+            sh """ 
+              curl repo.maven.apache.org
+              mvn clean install -DskipTests
+              ls target/*
+            """
+        }
+      }
+    }
+
+    stage('Docker build for creating image') {
+      environment {
+        HARBOR_USER     = credentials('HARBOR_ACCOUNT')
+    }
+      steps {
+        container(name: 'docker') {
+          sh """
+          echo ${HARBOR_USER_USR} ${HARBOR_USER_PSW} ${TAG}
+          docker build -t ${HARBOR_ADDRESS}/${REGISTRY_DIR}/${IMAGE_NAME}:${TAG} .
+          docker login -u ${HARBOR_USER_USR} -p ${HARBOR_USER_PSW} ${HARBOR_ADDRESS}
+          docker push ${HARBOR_ADDRESS}/${REGISTRY_DIR}/${IMAGE_NAME}:${TAG}
+          """
+        }
+      }
+    }
+
+    stage('Deploying to K8s') {
+      environment {
+        MY_KUBECONFIG = credentials('study-kubernetes')
+    }
+      steps {
+        container(name: 'kubectl'){
+           sh """
+           /usr/local/bin/kubectl --kubeconfig $MY_KUBECONFIG set image deploy -l app=${IMAGE_NAME} ${IMAGE_NAME}=${HARBOR_ADDRESS}/${REGISTRY_DIR}/${IMAGE_NAME}:${TAG} -n $NAMESPACE
+           """
+        }
+      }
+    }
+
+  }
+  environment {
+    COMMIT_ID = ""
+    HARBOR_ADDRESS = "192.168.14.244:5000"
+    REGISTRY_DIR = "kubernetes"
+    IMAGE_NAME = "spring-boot-project"
+    NAMESPACE = "kubernetes"
+    TAG = ""
+  }
+  parameters {
+    gitParameter(branch: '', branchFilter: 'origin/(.*)', defaultValue: '', description: 'Branch for build and deploy', name: 'BRANCH', quickFilterEnabled: false, selectedValue: 'NONE', sortMode: 'NONE', tagFilter: '*', type: 'PT_BRANCH')
+  }
+}
+```
+
+
+
+- 104行 123行的项目url: 地址更新为当前项目地址
+- 180行的 `HARBOR\_ADDRESS` 替换位当前harbor地址（如果未使用80端口，则需要替换端口）
+
+
+
+
+
+## 配置 K8S
 
 给节点打标签
 
-```
+```bash
 kubectl label node node build=true
 ```
 
+
+
 创建命名空间
 
-```
+```bash
 kubectl create ns kubernetes
 ```
 
+
+
 创建包含映像库用户名密码的secret
 
-```
+```bash
 kubectl create secret docker-registry harborkey --docker-server=192.168.14.244:5000 --docker-username=admin --docker-password=2wsx#EDC --docker-email=info@cloudzun.com -n kubernetes
 ```
 
-<figure><img src="https://pic4.zhimg.com/v2-a3d2da7c804b8a46b1dc79ec737b26e7_b.png" alt=""><figcaption></figcaption></figure>
 
 
 
-# 第三部分：构建 spring-boot-project 项目
+
+# 构建 spring-boot-project 项目
 
 在K8S群集上创建项目所需资源
 
