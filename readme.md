@@ -2046,17 +2046,26 @@ kubectl  patch service go-project --namespace=uat --type='json'  --patch='[{"op"
 
 
 
-启用 `This project is parameterized`，并填充以下属性，
+启用 `This project is parameterized`，从下拉菜单中选择 `Image Tag Parameter` 并填充以下属性：
 
-然后点击高级，填充 `Registry URL` 和 `Credential ID`
+- Name: `IMAGE_TAG`
+- Image Name: `kubernetes/go-project`
+- Default Tag: `latest`
+- Description: `选择需要部署的镜像版本`
 
 ![img](readme.assets/clip_image116.jpg)
 
- 
+ 然后点击高级，填充 `Registry URL` 和 `Credential ID`
+
+
 
 填充 pipeline 脚本
 
 范例见：https://github.com/cloudzun/devopslab/blob/main/UATPipeline
+
+![img](readme.assets/clip_image118.jpg)
+
+ 
 
 ```yaml
 pipeline {
@@ -2118,10 +2127,6 @@ spec:
 
 
 
-![img](readme.assets/clip_image118.jpg)
-
- 
-
 ## 在 UAT 环境中部署 1.0 版本的服务
 
 
@@ -2132,49 +2137,57 @@ spec:
 
  
 
-观察pipeline运行过程
+观察 pipeline运行过程
 
 ![图形用户界面, 网站  描述已自动生成](readme.assets/clip_image122.jpg)
 
  
 
-验证页面：http://192.168.14.204:30801/api/index.html
+验证 UAT 页面：http://192.168.14.204:30801/api/index.html
 
 ![img](readme.assets/clip_image124.jpg)
 
 ## 将开发环境中的代码迭代到 2.0 
 
-
+在代码库中,更新代码 
 
 ![img](readme.assets/clip_image126.jpg)
 
  
 
+在blue ocean 页面中观察流水线运行情况
+
 ![img](readme.assets/clip_image128.jpg)
 
 
+
+在镜像库中查看镜像版本信息
 
 ![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image130.jpg)
 
  
 
+查看新版本应用页面效果
+
 ![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image132.jpg)
 
  
 
-## 迭代 UAT 环境到 2.0
+## 在 UAT 环境中部署 2.0 版本的服务
 
 
+
+在 go-project-uat 项目中使用更新的映像进行部署
 
 ![图形用户界面, 文本, 应用程序  描述已自动生成](readme.assets/clip_image134.jpg)
 
 
 
- 
+ 观察流水线运行情况
 
 ![img](readme.assets/clip_image136.jpg)
 
- 
+ 查看 UAT 版本迭代后的页面
 
 ![图形用户界面, 文本, 应用程序, 电子邮件  描述已自动生成](readme.assets/clip_image138.jpg)
 
