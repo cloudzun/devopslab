@@ -1872,7 +1872,7 @@ kubectl patch svc -n kubernetes spring-boot-project  -p '{"spec":{"type": "NodeP
 
 
 ```bash
-kubectl patch service spring-boot-project --namespace=kubernetes spring-boot-project --type='json' --patch='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30080}]'
+kubectl patch service spring-boot-project --namespace=kubernetes spring-boot-project --type='json' --patch='[{"op": "replace", "path": "/spec/ports/0/nodePort", "value":30800}]'
 ```
 
 
@@ -2013,7 +2013,7 @@ kubectl  patch service go-project --namespace=kubernetes --type='json'  --patch=
 
  
 
-验证服务页面：http://192.168.14.204:30801/api/index.html
+验证服务页面：http://192.168.14.204:30800/api/index.html
 
 ![img](readme.assets/clip_image112.jpg)
 
